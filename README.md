@@ -325,26 +325,26 @@ sequenceDiagram
     participant DatabaseService
     participant PostgreSQL
 
-    Note over Client,PostgreSQL: Cache Miss (First Call)
-    Client->>CacheController: GET /api/cache/{key}
-    CacheController->>CacheService: getFromDatabase(key)
+    Note over Client,PostgreSQL: Cache Miss - First Call
+    Client->>CacheController: GET cache key
+    CacheController->>CacheService: getFromDatabase key
     CacheService->>Valkey: Check cache
-    Valkey-->>CacheService: null (miss)
-    CacheService->>DatabaseService: simulateSlowQuery()
+    Valkey-->>CacheService: null miss
+    CacheService->>DatabaseService: simulateSlowQuery
     DatabaseService->>PostgreSQL: INSERT INTO audit_log
-    PostgreSQL-->>DatabaseService: saved (2s delay)
-    DatabaseService-->>CacheService: "Database value"
-    CacheService->>Valkey: SET key value (cache for 10min)
+    PostgreSQL-->>DatabaseService: saved 2s delay
+    DatabaseService-->>CacheService: Database value
+    CacheService->>Valkey: SET key value cache 10min
     CacheService-->>CacheController: value
-    CacheController-->>Client: 200 OK (~2,014ms)
+    CacheController-->>Client: 200 OK ~2014ms
 
-    Note over Client,PostgreSQL: Cache Hit (Subsequent Calls)
-    Client->>CacheController: GET /api/cache/{key}
-    CacheController->>CacheService: getFromDatabase(key)
+    Note over Client,PostgreSQL: Cache Hit - Subsequent Calls
+    Client->>CacheController: GET cache key
+    CacheController->>CacheService: getFromDatabase key
     CacheService->>Valkey: Check cache
-    Valkey-->>CacheService: "Database value" (hit)
+    Valkey-->>CacheService: Database value hit
     CacheService-->>CacheController: value
-    CacheController-->>Client: 200 OK (~10ms)
+    CacheController-->>Client: 200 OK ~10ms
 ```
 
 ## Data Structure Flow Diagrams
@@ -493,7 +493,7 @@ flowchart LR
 flowchart LR
     A[Client] -->|GET cache| B[CacheController]
     B -->|getFromDatabase key| C[CacheService]
-    C -->|@Cacheable check| D{Valkey Cache}
+    C -->|cache check| D{Valkey Cache}
     D -->|HIT| C
     D -->|MISS| E[DatabaseService]
     E -->|simulateSlowQuery 2s| F[(PostgreSQL)]
