@@ -1,6 +1,6 @@
 # Valkey + Spring Boot
 
-A comprehensive Spring Boot project demonstrating all **Valkey** (Redis alternative) data structures and operations through REST APIs. Includes PostgreSQL for audit logging and Spring Cache abstraction to showcase the performance difference between Valkey (cache) and PostgreSQL (database).
+A comprehensive Spring Boot project demonstrating all **Valkey** (Redis alternative) data structures and operations through REST APIs. Includes PostgreSQL for audit logging and Spring Cache abstraction to showcase the performance difference between Valkey (cache) and PostgreSQL (database). All database operations include a **2-second artificial delay** to simulate real-world query latency, making the caching benefit immediately visible.
 
 ## Tech Stack
 
@@ -353,30 +353,30 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-    A[Client] -->|POST /api/strings| B[StringController]
+    A[Client] -->|POST set| B[StringController]
     B -->|set key value| C[StringService]
     C -->|opsForValue.set| D[StringValkeyTemplate]
     D -->|SET key value| E[(Valkey)]
 
-    A -->|GET /api/strings/{key}| B2[StringController]
+    A2[Client] -->|GET value| B2[StringController]
     B2 -->|get key| C2[StringService]
     C2 -->|opsForValue.get| D2[StringValkeyTemplate]
     D2 -->|GET key| E2[(Valkey)]
     E2 -->|value| D2
     D2 -->|value| C2
     C2 -->|value| B2
-    B2 -->|200 OK| A
+    B2 -->|200 OK| A2
 ```
 
 ### Hash Operations Flow
 
 ```mermaid
 flowchart LR
-    A[Client] -->|POST /api/hashes/{key}| B[HashController]
+    A[Client] -->|POST put field| B[HashController]
     B -->|put key field value| C[opsForHash]
     C -->|HSET key field value| D[(Valkey)]
 
-    A2[Client] -->|GET /api/hashes/{key}/entries| B2[HashController]
+    A2[Client] -->|GET entries| B2[HashController]
     B2 -->|entries key| C2[opsForHash]
     C2 -->|HGETALL key| D2[(Valkey)]
     D2 -->|Map| B2
@@ -387,11 +387,11 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A[Client] -->|POST /api/lists/{key}/left| B[ListController]
+    A[Client] -->|POST left push| B[ListController]
     B -->|leftPush key value| C[opsForList]
     C -->|LPUSH key value| D[(Valkey)]
 
-    A2[Client] -->|GET /api/lists/{key}| B2[ListController]
+    A2[Client] -->|GET all| B2[ListController]
     B2 -->|range key 0 -1| C2[opsForList]
     C2 -->|LRANGE key 0 -1| D2[(Valkey)]
     D2 -->|List| B2
@@ -402,11 +402,11 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A[Client] -->|POST /api/sets/{key}| B[SetController]
+    A[Client] -->|POST add members| B[SetController]
     B -->|add key values| C[opsForSet]
     C -->|SADD key v1 v2| D[(Valkey)]
 
-    A2[Client] -->|POST /api/sets/intersect| B2[SetController]
+    A2[Client] -->|POST intersect| B2[SetController]
     B2 -->|intersect k1 k2| C2[opsForSet]
     C2 -->|SINTER k1 k2| D2[(Valkey)]
     D2 -->|Set| B2
@@ -417,11 +417,11 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A[Client] -->|POST /api/sorted-sets/{key}| B[SortedSetController]
+    A[Client] -->|POST add with score| B[SortedSetController]
     B -->|add key member score| C[opsForZSet]
     C -->|ZADD key score member| D[(Valkey)]
 
-    A2[Client] -->|GET /api/sorted-sets/{key}/rank/{m}| B2[SortedSetController]
+    A2[Client] -->|GET rank| B2[SortedSetController]
     B2 -->|rank key member| C2[opsForZSet]
     C2 -->|ZRANK key member| D2[(Valkey)]
     D2 -->|rank| B2
@@ -432,11 +432,11 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A[Client] -->|POST /api/geo/{key}| B[GeoController]
+    A[Client] -->|POST add location| B[GeoController]
     B -->|addLocation key point member| C[opsForGeo]
     C -->|GEOADD key lng lat member| D[(Valkey)]
 
-    A2[Client] -->|GET /api/geo/{key}/distance| B2[GeoController]
+    A2[Client] -->|GET distance| B2[GeoController]
     B2 -->|distance key m1 m2| C2[opsForGeo]
     C2 -->|GEODIST key m1 m2| D2[(Valkey)]
     D2 -->|Distance| B2
@@ -447,13 +447,13 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A[Client] -->|POST /api/streams/{name}| B[StreamController]
+    A[Client] -->|POST add message| B[StreamController]
     B -->|addMessage stream data| C[opsForStream]
     C -->|XADD stream * k v| D[(Valkey)]
 
-    A2[Client] -->|POST /api/streams/{name}/group/{g}/read| B2[StreamController]
+    A2[Client] -->|POST read group| B2[StreamController]
     B2 -->|readGroup stream group consumer| C2[opsForStream]
-    C2 -->|XREADGROUP GROUP g consumer COUNT 1 STREAMS stream >| D2[(Valkey)]
+    C2 -->|XREADGROUP| D2[(Valkey)]
     D2 -->|Records| B2
     B2 -->|200 OK| A2
 ```
@@ -462,22 +462,22 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A[Client] -->|POST /api/hyperloglog/{key}/add| B[HyperLogLogController]
+    A[Client] -->|POST add elements| B[HyperLogLogController]
     B -->|add key values| C[opsForHyperLogLog]
     C -->|PFADD key v1 v2| D[(Valkey)]
 
-    A2[Client] -->|GET /api/hyperloglog/{key}/count| B2[HyperLogLogController]
+    A2[Client] -->|GET count| B2[HyperLogLogController]
     B2 -->|count key| C2[opsForHyperLogLog]
     C2 -->|PFCOUNT key| D2[(Valkey)]
     D2 -->|count| B2
     B2 -->|200 OK| A2
 ```
 
-### Script (Lua) Operations Flow
+### Script Lua Operations Flow
 
 ```mermaid
 flowchart LR
-    A[Client] -->|POST /api/scripts/atomic-increment| B[ScriptController]
+    A[Client] -->|POST atomic increment| B[ScriptController]
     B -->|execute script key| C[ScriptService]
     C -->|EVAL script 1 key| D[StringValkeyTemplate]
     D -->|EXEC| E[(Valkey)]
@@ -491,7 +491,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A[Client] -->|GET /api/cache/{key}| B[CacheController]
+    A[Client] -->|GET cache| B[CacheController]
     B -->|getFromDatabase key| C[CacheService]
     C -->|@Cacheable check| D{Valkey Cache}
     D -->|HIT| C
@@ -508,28 +508,28 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A[Client] -->|DELETE /api/keys/{key}| B[KeyController]
+    A[Client] -->|DELETE key| B[KeyController]
     B -->|delete key| C[StringValkeyTemplate]
     C -->|DEL key| D[(Valkey)]
 
-    A2[Client] -->|GET /api/keys/search?pattern=*| B2[KeyController]
+    A2[Client] -->|GET search| B2[KeyController]
     B2 -->|keys pattern| C2[StringValkeyTemplate]
     C2 -->|KEYS pattern| D2[(Valkey)]
     D2 -->|Set of keys| B2
     B2 -->|200 OK| A2
 ```
 
-### Server & Audit Log Flow
+### Server and Audit Log Flow
 
 ```mermaid
 flowchart LR
-    A[Client] -->|GET /api/server/info| B[ServerController]
+    A[Client] -->|GET info| B[ServerController]
     B -->|info| C[StringValkeyTemplate]
     C -->|INFO| D[(Valkey)]
     D -->|info map| B
     B -->|200 OK| A
 
-    A2[Client] -->|GET /api/server/audit-logs| B2[ServerController]
+    A2[Client] -->|GET audit-logs| B2[ServerController]
     B2 -->|findAll| E[DatabaseService]
     E -->|findAll 2s delay| F[AuditLogRepository]
     F -->|JPA query| G[(PostgreSQL)]
